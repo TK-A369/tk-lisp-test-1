@@ -1,3 +1,4 @@
+mod evaluator;
 mod lexer;
 mod parser;
 
@@ -11,6 +12,13 @@ fn main() {
             match parser::parse(&tokens) {
                 Ok(sexpr) => {
                     println!("Parsed code: {:?}", sexpr);
+
+                    match evaluator::eval(sexpr, evaluator::EvalContext::new()) {
+                        Ok(result) => {
+                            println!("Result: {:?}", result);
+                        }
+                        Err(e) => eprintln!("Evaluation error: {}", e),
+                    }
                 }
                 Err(e) => eprintln!("Parsing error: {}", e),
             }

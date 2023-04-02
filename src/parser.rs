@@ -1,12 +1,12 @@
 use crate::lexer;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Atom {
     Number(f64),
     Symbol(String),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum SExpr {
     Atom(Atom),
     List(Vec<SExpr>),

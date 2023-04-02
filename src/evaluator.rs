@@ -67,6 +67,56 @@ pub fn eval(
 									)))
                                 }
                             }
+                            "print" => {
+                                if list.len() == 2 {
+                                    let result = eval(list[1].clone(), ctx.clone())?;
+                                    if let parser::SExpr::Atom(atom) = &result {
+                                        if let parser::Atom::Number(num) = atom {
+                                            println!("{}", num);
+                                            Ok(result)
+                                        } else {
+                                            Err(Box::new(std::io::Error::new(
+												std::io::ErrorKind::InvalidInput,
+												"2nd argument to statement list `print` must evaluate to a number atom.",
+											)))
+                                        }
+                                    } else {
+                                        Err(Box::new(std::io::Error::new(
+											std::io::ErrorKind::InvalidInput,
+											"2nd argument to statement list `print` must evaluate to a number atom.",
+										)))
+                                    }
+                                } else {
+                                    Err(Box::new(std::io::Error::new(
+										std::io::ErrorKind::InvalidInput,
+										"Statement list `print` must have exactly 2 elements: `print`, value.",
+									)))
+                                }
+                            }
+                            "+" => {
+                                if list.len() > 2 {
+                                    let mut result: f64 = 0.0;
+                                    for i in 1..list.len() {
+                                        let elem_result = eval(list[i].clone(), ctx.clone())?;
+                                        if let parser::SExpr::Atom(parser::Atom::Number(num)) =
+                                            elem_result
+                                        {
+                                            result += num;
+                                        } else {
+                                            return Err(Box::new(std::io::Error::new(
+                                                std::io::ErrorKind::InvalidInput,
+                                                "2+nd argument of statement list `+` must evaluate to a number atom.",
+                                            )));
+                                        }
+                                    }
+                                    Ok(parser::SExpr::Atom(parser::Atom::Number(result)))
+                                } else {
+                                    Err(Box::new(std::io::Error::new(
+										std::io::ErrorKind::InvalidInput,
+										"Statement list `+` must have more than 2 elements: `+`, values... .",
+									)))
+                                }
+                            }
                             statement => Err(Box::new(std::io::Error::new(
                                 std::io::ErrorKind::InvalidInput,
                                 format!("Bad statement `{}`.", statement),

@@ -16,7 +16,7 @@ fn parse_expr(
     input: &Vec<lexer::Token>,
     curr_pos: &mut usize,
 ) -> Result<Option<SExpr>, Box<dyn std::error::Error>> {
-    println!("curr_pos={}", *curr_pos);
+    // println!("curr_pos={}", *curr_pos);
     let org_pos = *curr_pos;
     if let lexer::Token::LeftParen = input[*curr_pos] {
         *curr_pos += 1;

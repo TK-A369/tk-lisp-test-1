@@ -3,7 +3,8 @@ mod lexer;
 mod parser;
 
 fn main() {
-    let code1: String = String::from("(print (+ 2 5))");
+    // let code1: String = String::from("(print (+ 2 5))");
+    let code1: String = String::from("(print (+ (+ 8 2) 5))");
 
     match lexer::lex(code1) {
         Ok(tokens) => {

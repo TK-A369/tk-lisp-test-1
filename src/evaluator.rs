@@ -19,7 +19,7 @@ impl EvalContext {
 
 pub fn eval(
     sexpr: parser::SExpr,
-    ctx: EvalContext,
+    ctx: &mut EvalContext,
 ) -> Result<parser::SExpr, Box<dyn std::error::Error>> {
     match sexpr {
         parser::SExpr::Atom(parser::Atom::Number(num)) => {
@@ -36,7 +36,7 @@ pub fn eval(
                     // Evaluate all elements and return the last one
                     let mut ret_val: Option<parser::SExpr> = None;
                     for elem in list {
-                        ret_val = Some(eval(elem, ctx.clone())?);
+                        ret_val = Some(eval(elem, ctx)?);
                     }
                     Ok(ret_val.unwrap())
                 } else {
@@ -51,9 +51,9 @@ pub fn eval(
                                         let mut ctx_new = ctx.clone();
                                         ctx_new.vars.push(Variable {
                                             name: var_name,
-                                            value: eval(list[2].clone(), ctx.clone())?,
+                                            value: eval(list[2].clone(), ctx)?,
                                         });
-                                        eval(list[3].clone(), ctx_new)
+                                        eval(list[3].clone(), &mut ctx_new)
                                     } else {
                                         Err(Box::new(std::io::Error::new(
 											std::io::ErrorKind::InvalidInput,
@@ -69,7 +69,7 @@ pub fn eval(
                             }
                             "print" => {
                                 if list.len() == 2 {
-                                    let result = eval(list[1].clone(), ctx.clone())?;
+                                    let result = eval(list[1].clone(), ctx)?;
                                     if let parser::SExpr::Atom(atom) = &result {
                                         if let parser::Atom::Number(num) = atom {
                                             println!("{}", num);
@@ -97,7 +97,7 @@ pub fn eval(
                                 if list.len() > 2 {
                                     let mut result: f64 = 0.0;
                                     for i in 1..list.len() {
-                                        let elem_result = eval(list[i].clone(), ctx.clone())?;
+                                        let elem_result = eval(list[i].clone(), ctx)?;
                                         if let parser::SExpr::Atom(parser::Atom::Number(num)) =
                                             elem_result
                                         {

@@ -14,7 +14,7 @@ fn main() {
                 Ok(sexpr) => {
                     println!("Parsed code: {:#?}", sexpr);
 
-                    match evaluator::eval(sexpr, evaluator::EvalContext::new()) {
+                    match evaluator::eval(sexpr, &mut evaluator::EvalContext::new()) {
                         Ok(result) => {
                             println!("Result: {:#?}", result);
                         }

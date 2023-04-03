@@ -25,10 +25,23 @@ pub fn eval(
         parser::SExpr::Atom(parser::Atom::Number(num)) => {
             Ok(parser::SExpr::Atom(parser::Atom::Number(num)))
         }
-        parser::SExpr::Atom(parser::Atom::Symbol(sym)) => Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::Unsupported,
-            "Reading variables not implemented yet.",
-        ))),
+        parser::SExpr::Atom(parser::Atom::Symbol(sym)) => {
+            let mut curr_var: usize = ctx.vars.len() - 1;
+            loop {
+                if ctx.vars[curr_var].name == sym {
+                    break Ok(ctx.vars[curr_var].value.clone());
+                }
+
+                if curr_var == 0 {
+                    break Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "Variable not defined.",
+                    )));
+                } else {
+                    curr_var -= 1;
+                }
+            }
+        }
         parser::SExpr::List(list) => {
             if list.len() > 0 {
                 if let parser::SExpr::List(_) = list[0] {

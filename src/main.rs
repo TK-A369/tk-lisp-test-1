@@ -4,9 +4,20 @@ mod parser;
 
 fn main() {
     // let code1: String = String::from("(print (+ 2 5))");
-    let code1: String = String::from("(print (+ (+ 8 2) 5))");
+    // let code2: String = String::from("(print (+ (+ 8 2) 5))");
+    let code3: String = String::from(
+        "
+        (let a 3
+            (
+                (print a)
+                (print (+ (+ 8 2) 5))
+                (print (+ a 4))
+                (+ a 7)
+            )
+        )",
+    );
 
-    match lexer::lex(code1) {
+    match lexer::lex(code3) {
         Ok(tokens) => {
             println!("Tokens: {:#?}", tokens);
 

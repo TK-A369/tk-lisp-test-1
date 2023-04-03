@@ -36,7 +36,7 @@ pub fn eval(
                     if curr_var == 0 {
                         break Err(Box::new(std::io::Error::new(
                             std::io::ErrorKind::NotFound,
-                            "Variable not defined.",
+                            format!("Variable {} not defined.", sym),
                         )));
                     } else {
                         curr_var -= 1;
@@ -45,7 +45,7 @@ pub fn eval(
             } else {
                 Err(Box::new(std::io::Error::new(
                     std::io::ErrorKind::NotFound,
-                    "No variables are defined.",
+                    format!("Variable {} not defined.", sym),
                 )))
             }
         }
@@ -154,13 +154,13 @@ pub fn eval(
                                 format!("Bad statement `{}`.", statement),
                             ))),
                         },
-                        parser::SExpr::Atom(parser::Atom::Number(num)) => {
+                        parser::SExpr::Atom(parser::Atom::Number(_)) => {
                             Err(Box::new(std::io::Error::new(
                                 std::io::ErrorKind::InvalidInput,
                                 "Cannot evaluate list whose first element is a number.",
                             )))
                         }
-                        parser::SExpr::List(list) => unreachable!(),
+                        parser::SExpr::List(_) => unreachable!(),
                     }
                 }
             } else {

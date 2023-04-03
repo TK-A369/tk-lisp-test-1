@@ -7,12 +7,14 @@ fn main() {
     // let code2: String = String::from("(print (+ (+ 8 2) 5))");
     let code3: String = String::from(
         "
-        (let a 3
+        (let 
+            (a 3)
+            (b 9)
             (
                 (print a)
                 (print (+ (+ 8 2) 5))
                 (print (+ a 4))
-                (+ a 7)
+                (+ a b 7)
             )
         )",
     );

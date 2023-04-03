@@ -26,20 +26,27 @@ pub fn eval(
             Ok(parser::SExpr::Atom(parser::Atom::Number(num)))
         }
         parser::SExpr::Atom(parser::Atom::Symbol(sym)) => {
-            let mut curr_var: usize = ctx.vars.len() - 1;
-            loop {
-                if ctx.vars[curr_var].name == sym {
-                    break Ok(ctx.vars[curr_var].value.clone());
-                }
+            if ctx.vars.len() > 0 {
+                let mut curr_var: usize = ctx.vars.len() - 1;
+                loop {
+                    if ctx.vars[curr_var].name == sym {
+                        break Ok(ctx.vars[curr_var].value.clone());
+                    }
 
-                if curr_var == 0 {
-                    break Err(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::NotFound,
-                        "Variable not defined.",
-                    )));
-                } else {
-                    curr_var -= 1;
+                    if curr_var == 0 {
+                        break Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::NotFound,
+                            "Variable not defined.",
+                        )));
+                    } else {
+                        curr_var -= 1;
+                    }
                 }
+            } else {
+                Err(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "No variables are defined.",
+                )))
             }
         }
         parser::SExpr::List(list) => {
@@ -57,26 +64,38 @@ pub fn eval(
                     match &list[0] {
                         parser::SExpr::Atom(parser::Atom::Symbol(sym)) => match sym.as_str() {
                             "let" => {
-                                if list.len() == 4 {
-                                    if let parser::SExpr::Atom(parser::Atom::Symbol(var_name)) =
-                                        list[1].clone()
-                                    {
-                                        let mut ctx_new = ctx.clone();
-                                        ctx_new.vars.push(Variable {
-                                            name: var_name,
-                                            value: eval(list[2].clone(), ctx)?,
-                                        });
-                                        eval(list[3].clone(), &mut ctx_new)
-                                    } else {
-                                        Err(Box::new(std::io::Error::new(
-											std::io::ErrorKind::InvalidInput,
-											"2nd argument of statement list `let` must be symbol - variable name.",
-										)))
+                                if list.len() >= 3 {
+                                    let mut ctx_new = ctx.clone();
+                                    for i in 0..(list.len() - 2) {
+                                        if let parser::SExpr::List(var_def_list) = &list[i + 1] {
+                                            if let parser::SExpr::Atom(parser::Atom::Symbol(
+                                                var_name,
+                                            )) = var_def_list[0].clone()
+                                            {
+                                                let value_evaluated: parser::SExpr =
+                                                    eval(var_def_list[1].clone(), &mut ctx_new)?;
+                                                ctx_new.vars.push(Variable {
+                                                    name: var_name,
+                                                    value: value_evaluated,
+                                                });
+                                            } else {
+                                                return Err(Box::new(std::io::Error::new(
+                                                    std::io::ErrorKind::InvalidInput,
+                                                    "1st element of `let` variable definition must be symbol - variable name.",
+										        )));
+                                            }
+                                        } else {
+                                            return Err(Box::new(std::io::Error::new(
+                                                std::io::ErrorKind::InvalidInput,
+                                                "Arguments (besides first and last) of statement list `let` must be list of variable name and value.",
+                                            )));
+                                        }
                                     }
+                                    eval(list[list.len() - 1].clone(), &mut ctx_new)
                                 } else {
                                     Err(Box::new(std::io::Error::new(
 										std::io::ErrorKind::InvalidInput,
-										"Statement list `let` must have exactly 4 elements: `let`, var_name, var_value, block.",
+										"Statement list `let` must have at least 3 elements: `let`, (var_name, var_value)+, block.",
 									)))
                                 }
                             }

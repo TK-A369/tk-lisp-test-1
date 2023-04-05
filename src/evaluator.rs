@@ -18,18 +18,18 @@ impl EvalContext {
 }
 
 pub fn eval(
-    sexpr: parser::SExpr,
+    sexpr: &parser::SExpr,
     ctx: &mut EvalContext,
 ) -> Result<parser::SExpr, Box<dyn std::error::Error>> {
     match sexpr {
         parser::SExpr::Atom(parser::Atom::Number(num)) => {
-            Ok(parser::SExpr::Atom(parser::Atom::Number(num)))
+            Ok(parser::SExpr::Atom(parser::Atom::Number(*num)))
         }
         parser::SExpr::Atom(parser::Atom::Symbol(sym)) => {
             if ctx.vars.len() > 0 {
                 let mut curr_var: usize = ctx.vars.len() - 1;
                 loop {
-                    if ctx.vars[curr_var].name == sym {
+                    if &ctx.vars[curr_var].name == sym {
                         break Ok(ctx.vars[curr_var].value.clone());
                     }
 
@@ -73,7 +73,7 @@ pub fn eval(
                                             )) = var_def_list[0].clone()
                                             {
                                                 let value_evaluated: parser::SExpr =
-                                                    eval(var_def_list[1].clone(), &mut ctx_new)?;
+                                                    eval(&var_def_list[1], &mut ctx_new)?;
                                                 ctx_new.vars.push(Variable {
                                                     name: var_name,
                                                     value: value_evaluated,
@@ -91,7 +91,46 @@ pub fn eval(
                                             )));
                                         }
                                     }
-                                    eval(list[list.len() - 1].clone(), &mut ctx_new)
+                                    eval(&list[list.len() - 1], &mut ctx_new)
+                                } else {
+                                    Err(Box::new(std::io::Error::new(
+										std::io::ErrorKind::InvalidInput,
+										"Statement list `let` must have at least 3 elements: `let`, (var_name, var_value)+, block.",
+									)))
+                                }
+                            }
+                            "set" => {
+                                if list.len() == 3 {
+                                    if let parser::SExpr::Atom(parser::Atom::Symbol(var_name)) =
+                                        &list[1]
+                                    {
+                                        let value_evaluated: parser::SExpr = eval(&list[2], ctx)?;
+                                        let mut curr_var: usize = ctx.vars.len() - 1;
+                                        if let Err(e) = loop {
+                                            if &ctx.vars[curr_var].name == var_name {
+                                                ctx.vars[curr_var].value = value_evaluated.clone();
+                                                break Ok(());
+                                            }
+
+                                            if curr_var == 0 {
+                                                break Err(Box::new(std::io::Error::new(
+                                                    std::io::ErrorKind::NotFound,
+                                                    format!("Variable {} not defined.", var_name),
+                                                )));
+                                            } else {
+                                                curr_var -= 1;
+                                            }
+                                        } {
+                                            return Err(e);
+                                        }
+
+                                        Ok(value_evaluated)
+                                    } else {
+                                        Err(Box::new(std::io::Error::new(
+                                                std::io::ErrorKind::InvalidInput,
+                                                "Arguments (besides first and last) of statement list `let` must be list of variable name and value.",
+                                            )))
+                                    }
                                 } else {
                                     Err(Box::new(std::io::Error::new(
 										std::io::ErrorKind::InvalidInput,
@@ -101,7 +140,7 @@ pub fn eval(
                             }
                             "print" => {
                                 if list.len() == 2 {
-                                    let result = eval(list[1].clone(), ctx)?;
+                                    let result = eval(&list[1], ctx)?;
                                     if let parser::SExpr::Atom(atom) = &result {
                                         if let parser::Atom::Number(num) = atom {
                                             println!("{}", num);
@@ -129,7 +168,7 @@ pub fn eval(
                                 if list.len() > 2 {
                                     let mut result: f64 = 0.0;
                                     for i in 1..list.len() {
-                                        let elem_result = eval(list[i].clone(), ctx)?;
+                                        let elem_result = eval(&list[i], ctx)?;
                                         if let parser::SExpr::Atom(parser::Atom::Number(num)) =
                                             elem_result
                                         {

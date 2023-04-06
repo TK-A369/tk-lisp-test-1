@@ -138,29 +138,62 @@ pub fn eval(
 									)))
                                 }
                             }
-                            "print" => {
+                            "quote" => {
                                 if list.len() == 2 {
-                                    let result = eval(&list[1], ctx)?;
-                                    if let parser::SExpr::Atom(atom) = &result {
-                                        if let parser::Atom::Number(num) = atom {
-                                            println!("{}", num);
-                                            Ok(result)
-                                        } else {
-                                            Err(Box::new(std::io::Error::new(
-												std::io::ErrorKind::InvalidInput,
-												"2nd argument to statement list `print` must evaluate to a number atom.",
-											)))
-                                        }
-                                    } else {
-                                        Err(Box::new(std::io::Error::new(
-											std::io::ErrorKind::InvalidInput,
-											"2nd argument to statement list `print` must evaluate to a number atom.",
-										)))
-                                    }
+                                    Ok(list[1].clone())
                                 } else {
                                     Err(Box::new(std::io::Error::new(
 										std::io::ErrorKind::InvalidInput,
-										"Statement list `print` must have exactly 2 elements: `print`, value.",
+										"Statement list `quote` must have exactly 2 elements: `quote`, value.",
+									)))
+                                }
+                            }
+                            "list" => {
+                                let mut result: Vec<parser::SExpr> = Vec::new();
+                                for i in 1..list.len() {
+                                    result.push(eval(&list[i], ctx)?);
+                                }
+                                Ok(parser::SExpr::List(result))
+                            }
+                            "print" => {
+                                if list.len() >= 2 {
+                                    for i in 1..list.len() {
+                                        let result = eval(&list[i], ctx)?;
+                                        if let parser::SExpr::Atom(atom) = &result {
+                                            if let parser::Atom::Number(num) = atom {
+                                                print!("{}", num);
+                                            } else {
+                                                return Err(Box::new(std::io::Error::new(
+												    std::io::ErrorKind::InvalidInput,
+												    "2+nd argument to statement list `print` must evaluate to a number atom or list of number atoms (char codes).",
+											    )));
+                                            }
+                                        } else if let parser::SExpr::List(print_list) = &result {
+                                            for elem in print_list {
+                                                if let parser::SExpr::Atom(parser::Atom::Number(
+                                                    ch,
+                                                )) = elem
+                                                {
+                                                    print!("{}", (*ch) as u8 as char);
+                                                } else {
+                                                    return Err(Box::new(std::io::Error::new(
+                                                        std::io::ErrorKind::InvalidInput,
+                                                        "2+nd argument to statement list `print` must evaluate to a number atom or list of number atoms (char codes).",
+                                                    )));
+                                                }
+                                            }
+                                        } else {
+                                            return Err(Box::new(std::io::Error::new(
+											std::io::ErrorKind::InvalidInput,
+											"+2nd argument to statement list `print` must evaluate to a number atom or list of number atoms (char codes).",
+										    )));
+                                        }
+                                    }
+                                    Ok(parser::SExpr::List(vec![]))
+                                } else {
+                                    Err(Box::new(std::io::Error::new(
+										std::io::ErrorKind::InvalidInput,
+										"Statement list `print` must have at least 2 elements: `print`, value+.",
 									)))
                                 }
                             }

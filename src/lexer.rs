@@ -4,6 +4,7 @@ pub enum Token {
     RightParen,
     Number(f64),
     Symbol(String),
+    String(String),
 }
 
 pub fn lex(input: String) -> Result<Vec<Token>, Box<dyn std::error::Error>> {
@@ -66,6 +67,40 @@ pub fn lex(input: String) -> Result<Vec<Token>, Box<dyn std::error::Error>> {
             }
 
             tokens.push(Token::Symbol(buf));
+        } else if input.chars().nth(curr_pos).unwrap() == '"' {
+            let mut buf: String = String::new();
+            curr_pos += 1;
+            'chars_loop: loop {
+                println!("curr_pos={}", curr_pos);
+                match input.chars().nth(curr_pos).unwrap() {
+                    '\"' => {
+                        println!("String end!");
+                        break 'chars_loop;
+                    }
+                    '\\' => {
+                        buf.push(match input.chars().nth(curr_pos + 1).unwrap() {
+                            'n' => '\n',
+                            'r' => '\r',
+                            't' => '\t',
+                            '"' => '\"',
+                            ch => {
+                                return Err(Box::new(std::io::Error::new(
+                                    std::io::ErrorKind::InvalidData,
+                                    format!("Invalid escape character '{}'", ch),
+                                )));
+                            }
+                        });
+                        curr_pos += 1;
+                    }
+                    ch => {
+                        buf.push(ch);
+                        println!("Char: {}", ch);
+                    }
+                }
+                curr_pos += 1;
+            }
+            curr_pos += 1;
+            tokens.push(Token::String(buf));
         } else {
             curr_pos += 1;
         }

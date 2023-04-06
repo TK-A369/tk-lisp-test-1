@@ -18,25 +18,29 @@ fn main() {
     //         )
     //     )",
     // );
-    let code4: String = String::from(
-        "
-        (let 
-            (a 3)
-            (b 9)
-            (
-                (print a)
-                (set a 4)
-                (print a)
-                (set a b)
-                (print a)
-                (set b 7)
-                (print a)
-                a
-            )
-        )",
+    // let code4: String = String::from(
+    //     "
+    //     (let
+    //         (a 3)
+    //         (b 9)
+    //         (
+    //             (print a)
+    //             (set a 4)
+    //             (print a)
+    //             (set a b)
+    //             (print a)
+    //             (set b 7)
+    //             (print a)
+    //             a
+    //         )
+    //     )",
+    // );
+    let code5: String = String::from(
+        r#"
+        (print "Hello world!\n" 3 " " 6 "\n")"#,
     );
 
-    match lexer::lex(code4) {
+    match lexer::lex(code5) {
         Ok(tokens) => {
             println!("Tokens: {:#?}", tokens);
 

@@ -50,6 +50,14 @@ fn parse_expr(
     } else if let lexer::Token::Symbol(sym) = &input[*curr_pos] {
         *curr_pos += 1;
         Ok(Some(SExpr::Atom(Atom::Symbol(sym.clone()))))
+    } else if let lexer::Token::String(s) = &input[*curr_pos] {
+        println!("Parsing string: {}", s);
+        let mut buf: Vec<SExpr> = vec![SExpr::Atom(Atom::Symbol(String::from("list")))];
+        for b in s.bytes() {
+            buf.push(SExpr::Atom(Atom::Number(b as f64)));
+        }
+        *curr_pos += 1;
+        Ok(Some(SExpr::List(buf)))
     } else {
         Ok(None)
     }

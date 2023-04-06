@@ -128,14 +128,97 @@ pub fn eval(
                                     } else {
                                         Err(Box::new(std::io::Error::new(
                                                 std::io::ErrorKind::InvalidInput,
-                                                "Arguments (besides first and last) of statement list `let` must be list of variable name and value.",
+                                                "Statement list `set` must have exactly 3 elements: `set`, var_name, var_value.",
                                             )))
                                     }
                                 } else {
                                     Err(Box::new(std::io::Error::new(
 										std::io::ErrorKind::InvalidInput,
-										"Statement list `let` must have at least 3 elements: `let`, (var_name, var_value)+, block.",
+										"Statement list `set` must have exactly 3 elements: `set`, var_name, var_value.",
 									)))
+                                }
+                            }
+                            "if" => {
+                                let cond_evaluated: parser::SExpr = eval(&list[1], ctx)?;
+                                let cond: bool =
+                                    if let parser::SExpr::Atom(parser::Atom::Number(num)) =
+                                        cond_evaluated
+                                    {
+                                        if num == 0.0 {
+                                            false
+                                        } else {
+                                            true
+                                        }
+                                    } else if let parser::SExpr::List(cond_list) = cond_evaluated {
+                                        if cond_list.len() == 0 {
+                                            false
+                                        } else {
+                                            true
+                                        }
+                                    } else {
+                                        false
+                                    };
+
+                                if list.len() == 3 {
+                                    if cond {
+                                        Ok(eval(&list[2], ctx)?)
+                                    } else {
+                                        Ok(parser::SExpr::List(vec![]))
+                                    }
+                                } else if list.len() == 4 {
+                                    if cond {
+                                        Ok(eval(&list[2], ctx)?)
+                                    } else {
+                                        Ok(eval(&list[3], ctx)?)
+                                    }
+                                } else {
+                                    Err(Box::new(std::io::Error::new(
+                                        std::io::ErrorKind::InvalidInput,
+                                        "Statement list `if` must have 3 or 4 elements: `if`, cond, block1, block2?."
+                                    )))
+                                }
+                            }
+                            op @ (">" | "<" | ">=" | "<=" | "=") => {
+                                if list.len() == 3 {
+                                    let val1 = eval(&list[1], ctx)?;
+                                    let val2 = eval(&list[2], ctx)?;
+
+                                    if let parser::SExpr::Atom(parser::Atom::Number(val1_num)) =
+                                        val1
+                                    {
+                                        if let parser::SExpr::Atom(parser::Atom::Number(val2_num)) =
+                                            val2
+                                        {
+                                            let result = match op {
+                                                ">" => val1_num > val2_num,
+                                                "<" => val1_num < val2_num,
+                                                ">=" => val1_num >= val2_num,
+                                                "<=" => val1_num <= val2_num,
+                                                "=" => val1_num == val2_num,
+                                                _ => unreachable!(),
+                                            };
+                                            if result {
+                                                Ok(parser::SExpr::Atom(parser::Atom::Number(1.0)))
+                                            } else {
+                                                Ok(parser::SExpr::Atom(parser::Atom::Number(0.0)))
+                                            }
+                                        } else {
+                                            Err(Box::new(std::io::Error::new(
+                                                std::io::ErrorKind::InvalidInput,
+                                                "Comparison statement list must have exactly 3 elements: operator, val1, val2.",
+                                            )))
+                                        }
+                                    } else {
+                                        Err(Box::new(std::io::Error::new(
+                                            std::io::ErrorKind::InvalidInput,
+                                            "Comparison statement list must have exactly 3 elements: operator, val1, val2.",
+                                        )))
+                                    }
+                                } else {
+                                    Err(Box::new(std::io::Error::new(
+                                        std::io::ErrorKind::InvalidInput,
+                                        "Statement list `if` must have 3 or 4 elements: `if`, cond, block1, block2?.",
+                                    )))
                                 }
                             }
                             "quote" => {

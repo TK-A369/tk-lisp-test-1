@@ -17,6 +17,24 @@ impl EvalContext {
     }
 }
 
+fn value_is_true(value: &parser::SExpr) -> bool {
+    if let parser::SExpr::Atom(parser::Atom::Number(num)) = value {
+        if *num == 0.0 {
+            false
+        } else {
+            true
+        }
+    } else if let parser::SExpr::List(cond_list) = value {
+        if cond_list.len() == 0 {
+            false
+        } else {
+            true
+        }
+    } else {
+        false
+    }
+}
+
 pub fn eval(
     sexpr: &parser::SExpr,
     ctx: &mut EvalContext,
@@ -140,24 +158,7 @@ pub fn eval(
                             }
                             "if" => {
                                 let cond_evaluated: parser::SExpr = eval(&list[1], ctx)?;
-                                let cond: bool =
-                                    if let parser::SExpr::Atom(parser::Atom::Number(num)) =
-                                        cond_evaluated
-                                    {
-                                        if num == 0.0 {
-                                            false
-                                        } else {
-                                            true
-                                        }
-                                    } else if let parser::SExpr::List(cond_list) = cond_evaluated {
-                                        if cond_list.len() == 0 {
-                                            false
-                                        } else {
-                                            true
-                                        }
-                                    } else {
-                                        false
-                                    };
+                                let cond: bool = value_is_true(&cond_evaluated);
 
                                 if list.len() == 3 {
                                     if cond {
@@ -175,6 +176,23 @@ pub fn eval(
                                     Err(Box::new(std::io::Error::new(
                                         std::io::ErrorKind::InvalidInput,
                                         "Statement list `if` must have 3 or 4 elements: `if`, cond, block1, block2?."
+                                    )))
+                                }
+                            }
+                            "while" => {
+                                if list.len() == 3 {
+                                    let mut result: parser::SExpr = parser::SExpr::List(vec![]);
+                                    while {
+                                        let cond_evaluated: parser::SExpr = eval(&list[1], ctx)?;
+                                        value_is_true(&cond_evaluated)
+                                    } {
+                                        result = eval(&list[2], ctx)?;
+                                    }
+                                    Ok(result)
+                                } else {
+                                    Err(Box::new(std::io::Error::new(
+                                        std::io::ErrorKind::InvalidInput,
+                                        "Statement list `while` must have 3 elements: `while`, cond, block."
                                     )))
                                 }
                             }
@@ -280,6 +298,12 @@ pub fn eval(
 									)))
                                 }
                             }
+                            "readnum" => {
+                                let mut buf: String = String::new();
+                                std::io::stdin().read_line(&mut buf)?;
+                                let num = buf.trim().parse::<f64>()?;
+                                Ok(parser::SExpr::Atom(parser::Atom::Number(num)))
+                            }
                             "+" => {
                                 if list.len() > 2 {
                                     let mut result: f64 = 0.0;
@@ -319,10 +343,7 @@ pub fn eval(
                     }
                 }
             } else {
-                Err(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "Cannot evaluate empty list.",
-                )))
+                Ok(parser::SExpr::List(vec![]))
             }
         }
     }

@@ -39,23 +39,55 @@ fn main() {
     //     r#"
     //     (print "Hello world!\n" 3 " " 6 "\n")"#,
     // );
-    let code5: String = String::from(
+    // let code5: String = String::from(
+    //     r#"
+    //     (let
+    //         (a 4)
+    //         (
+    //             (print
+    //                 (if (>= a 5)
+    //                     ((print "yes\n") (+ a 3))
+    //                     ((print "no\n") (+ a 8))
+    //                 )
+    //                 "\n"
+    //             )
+    //         )
+    //     )"#,
+    // );
+    let code6: String = String::from(
         r#"
         (let
-            (a 4)
+            (selected 72)
+            (guess 0)
+            (counter 0)
             (
-                (print
-                    (if (>= a 5)
-                        ((print "yes\n") (+ a 3))
-                        ((print "no\n") (+ a 8))
+                (while (
+                    (set guess (readnum))
+                    (set counter (+ counter 1))
+                    (if (> guess selected)
+                    (
+                        (print "You entered too big number.\n")
+                        1
                     )
-                    "\n"
-                )
+                    (
+                        (if (< guess selected)
+                        (
+                            (print "You entered too small number.\n")
+                            1
+                        )
+                        (
+                            (print "Congratulations! You guessed right number.\n")
+                            0
+                        ))
+                    ))
+                ) ())
+                (print "You had " counter " guesses.\n")
+                counter
             )
         )"#,
     );
 
-    match lexer::lex(code5) {
+    match lexer::lex(code6) {
         Ok(tokens) => {
             println!("Tokens: {:#?}", tokens);
 

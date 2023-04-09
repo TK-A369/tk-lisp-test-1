@@ -38,6 +38,7 @@ pub fn lex(input: String) -> Result<Vec<Token>, Box<dyn std::error::Error>> {
             let ch = input.chars().nth(curr_pos).unwrap();
             (ch >= 'a' && ch <= 'z')
                 || (ch >= 'A' && ch <= 'Z')
+                || (ch >= '0' && ch <= '9')
                 || ch == '_'
                 || ch == '+'
                 || ch == '-'
@@ -53,6 +54,7 @@ pub fn lex(input: String) -> Result<Vec<Token>, Box<dyn std::error::Error>> {
                 ch = input.chars().nth(curr_pos).unwrap();
                 (ch >= 'a' && ch <= 'z')
                     || (ch >= 'A' && ch <= 'Z')
+                    || (ch >= '0' && ch <= '9')
                     || ch == '_'
                     || ch == '+'
                     || ch == '-'

@@ -212,14 +212,140 @@ pub fn eval(
                             }
                             "lambda" => {
                                 if list.len() == 4 {
-                                    Err(Box::new(std::io::Error::new(
-                                        std::io::ErrorKind::InvalidInput,
-                                        "Not implemented yet!",
-                                    )))
+                                    if let parser::SExpr::List(capture_list) = &list[1] {
+                                        let mut captured_vars: Vec<parser::SExpr> = Vec::new();
+                                        for elem in capture_list {
+                                            if let parser::SExpr::Atom(parser::Atom::Symbol(
+                                                var_name,
+                                            )) = elem
+                                            {
+                                                captured_vars.push(parser::SExpr::List(vec![
+                                                    parser::SExpr::Atom(parser::Atom::Symbol(
+                                                        var_name.clone(),
+                                                    )),
+                                                    eval(
+                                                        &parser::SExpr::Atom(parser::Atom::Symbol(
+                                                            var_name.clone(),
+                                                        )),
+                                                        ctx,
+                                                    )?,
+                                                ]));
+                                            } else {
+                                                return Err(Box::new(std::io::Error::new(
+                                                    std::io::ErrorKind::InvalidInput,
+                                                    "2nd element of statement list `lambda` must be list atoms - variable names."
+                                                )));
+                                            }
+                                        }
+                                        Ok(parser::SExpr::List(vec![
+                                            parser::SExpr::Atom(parser::Atom::Symbol(
+                                                String::from("lambda-captured"),
+                                            )),
+                                            parser::SExpr::List(captured_vars),
+                                            list[2].clone(),
+                                            list[3].clone(),
+                                        ]))
+                                    } else {
+                                        Err(Box::new(std::io::Error::new(
+                                            std::io::ErrorKind::InvalidInput,
+                                            "2nd element of statement list `lambda` must be list atoms - variable names."
+                                        )))
+                                    }
                                 } else {
                                     Err(Box::new(std::io::Error::new(
                                         std::io::ErrorKind::InvalidInput,
                                         "Statement list `lambda` must have 3 elements: `lambda`, capture-list, args, block."
+                                    )))
+                                }
+                            }
+                            "lambda-captured" => Ok(parser::SExpr::List(list.clone())),
+                            "call" => {
+                                if list.len() >= 2 {
+                                    if let parser::SExpr::List(value_to_call) =
+                                        resolve_reference(&(eval(&list[1], ctx)?))
+                                    {
+                                        println!("Value to call:\n{:#?}", value_to_call);
+                                        if let parser::SExpr::Atom(parser::Atom::Symbol(
+                                            value_to_call_type,
+                                        )) = &value_to_call[0]
+                                        {
+                                            if value_to_call_type == "lambda-captured" {
+                                                let mut new_ctx = EvalContext::new();
+                                                if let parser::SExpr::List(captured_vars) =
+                                                    &value_to_call[1]
+                                                {
+                                                    for captured_var in captured_vars {
+                                                        if let parser::SExpr::List(
+                                                            captured_var_pair,
+                                                        ) = &captured_var
+                                                        {
+                                                            let var_name: String =
+                                                                if let parser::SExpr::Atom(
+                                                                    parser::Atom::Symbol(var_name),
+                                                                ) = &captured_var_pair[0]
+                                                                {
+                                                                    var_name.clone()
+                                                                } else {
+                                                                    return Err(Box::new(std::io::Error::new(
+                                                                        std::io::ErrorKind::InvalidInput,
+                                                                        "Bad lambda-captured."
+                                                                    )));
+                                                                };
+                                                            let var_value: Rc<
+                                                                Mutex<parser::SExpr>,
+                                                            > = if let parser::SExpr::Ref(ref_val) =
+                                                                &captured_var_pair[1]
+                                                            {
+                                                                ref_val.clone()
+                                                            } else {
+                                                                return Err(Box::new(std::io::Error::new(
+                                                                    std::io::ErrorKind::InvalidInput,
+                                                                    "Bad lambda-captured."
+                                                                )));
+                                                            };
+                                                            new_ctx.vars.push(Variable {
+                                                                name: var_name,
+                                                                value: var_value,
+                                                            });
+                                                        } else {
+                                                            return Err(Box::new(std::io::Error::new(
+                                                                std::io::ErrorKind::InvalidInput,
+                                                                "Bad lambda-captured."
+                                                            )));
+                                                        }
+                                                    }
+
+                                                    //TODO: arguments
+
+                                                    eval(&value_to_call[3], &mut new_ctx)
+                                                } else {
+                                                    Err(Box::new(std::io::Error::new(
+                                                        std::io::ErrorKind::InvalidInput,
+                                                        "Bad lambda-captured.",
+                                                    )))
+                                                }
+                                            } else {
+                                                Err(Box::new(std::io::Error::new(
+                                                    std::io::ErrorKind::InvalidInput,
+                                                    "2nd argument of statement list `call` after evaluation must be list starting with lambda-captured."
+                                                )))
+                                            }
+                                        } else {
+                                            Err(Box::new(std::io::Error::new(
+                                                std::io::ErrorKind::InvalidInput,
+                                                "Bad value-to-call.",
+                                            )))
+                                        }
+                                    } else {
+                                        Err(Box::new(std::io::Error::new(
+                                            std::io::ErrorKind::InvalidInput,
+                                            "2nd argument of statement list `call` after evaluation must be list starting with lambda-captured."
+                                        )))
+                                    }
+                                } else {
+                                    Err(Box::new(std::io::Error::new(
+                                        std::io::ErrorKind::InvalidInput,
+                                        "Statement list `call` must have at least 2 elements: `call`, value-to-call, args*."
                                     )))
                                 }
                             }

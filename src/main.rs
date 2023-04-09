@@ -54,40 +54,54 @@ fn main() {
     //         )
     //     )"#,
     // );
-    let code6: String = String::from(
+    // let code6: String = String::from(
+    //     r#"
+    //     (let
+    //         (selected 72)
+    //         (guess 0)
+    //         (counter 0)
+    //         (
+    //             (while (
+    //                 (set guess (readnum))
+    //                 (set counter (+ counter 1))
+    //                 (if (> guess selected)
+    //                 (
+    //                     (print "You entered too big number.\n")
+    //                     1
+    //                 )
+    //                 (
+    //                     (if (< guess selected)
+    //                     (
+    //                         (print "You entered too small number.\n")
+    //                         1
+    //                     )
+    //                     (
+    //                         (print "Congratulations! You guessed right number.\n")
+    //                         0
+    //                     ))
+    //                 ))
+    //             ) ())
+    //             (print "You had " counter " guesses.\n")
+    //             counter
+    //         )
+    //     )"#,
+    // );
+    let code7: String = String::from(
         r#"
         (let
-            (selected 72)
-            (guess 0)
-            (counter 0)
+            (myfun1 (lambda () () 
+                (
+                    (print "Hello, lambda!\n")
+                    72
+                )))
             (
-                (while (
-                    (set guess (readnum))
-                    (set counter (+ counter 1))
-                    (if (> guess selected)
-                    (
-                        (print "You entered too big number.\n")
-                        1
-                    )
-                    (
-                        (if (< guess selected)
-                        (
-                            (print "You entered too small number.\n")
-                            1
-                        )
-                        (
-                            (print "Congratulations! You guessed right number.\n")
-                            0
-                        ))
-                    ))
-                ) ())
-                (print "You had " counter " guesses.\n")
-                counter
+                (call myfun1)
             )
-        )"#,
+        )
+        "#,
     );
 
-    match lexer::lex(code6) {
+    match lexer::lex(code7) {
         Ok(tokens) => {
             println!("Tokens: {:#?}", tokens);
 

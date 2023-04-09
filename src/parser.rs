@@ -1,5 +1,8 @@
 use crate::lexer;
 
+use std::rc::Rc;
+use std::sync::Mutex;
+
 #[derive(Clone, Debug)]
 pub enum Atom {
     Number(f64),
@@ -10,6 +13,7 @@ pub enum Atom {
 pub enum SExpr {
     Atom(Atom),
     List(Vec<SExpr>),
+    Ref(Rc<Mutex<SExpr>>),
 }
 
 fn parse_expr(

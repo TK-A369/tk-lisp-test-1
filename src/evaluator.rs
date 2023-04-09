@@ -1,9 +1,12 @@
 use crate::parser;
 
+use std::rc::Rc;
+use std::sync::Mutex;
+
 #[derive(Clone)]
 struct Variable {
     name: String,
-    value: parser::SExpr,
+    value: Rc<Mutex<parser::SExpr>>,
 }
 
 #[derive(Clone)]
@@ -18,8 +21,9 @@ impl EvalContext {
 }
 
 fn value_is_true(value: &parser::SExpr) -> bool {
+    let value = resolve_reference(value);
     if let parser::SExpr::Atom(parser::Atom::Number(num)) = value {
-        if *num == 0.0 {
+        if num == 0.0 {
             false
         } else {
             true
@@ -35,6 +39,14 @@ fn value_is_true(value: &parser::SExpr) -> bool {
     }
 }
 
+fn resolve_reference(value: &parser::SExpr) -> parser::SExpr {
+    let mut value_buf: parser::SExpr = value.clone();
+    while let parser::SExpr::Ref(ref_val) = value_buf {
+        value_buf = (*ref_val.lock().unwrap()).clone();
+    }
+    value_buf
+}
+
 pub fn eval(
     sexpr: &parser::SExpr,
     ctx: &mut EvalContext,
@@ -48,7 +60,7 @@ pub fn eval(
                 let mut curr_var: usize = ctx.vars.len() - 1;
                 loop {
                     if &ctx.vars[curr_var].name == sym {
-                        break Ok(ctx.vars[curr_var].value.clone());
+                        break Ok(parser::SExpr::Ref(ctx.vars[curr_var].value.clone()));
                     }
 
                     if curr_var == 0 {
@@ -94,7 +106,7 @@ pub fn eval(
                                                     eval(&var_def_list[1], &mut ctx_new)?;
                                                 ctx_new.vars.push(Variable {
                                                     name: var_name,
-                                                    value: value_evaluated,
+                                                    value: Rc::new(Mutex::new(value_evaluated)),
                                                 });
                                             } else {
                                                 return Err(Box::new(std::io::Error::new(
@@ -126,7 +138,9 @@ pub fn eval(
                                         let mut curr_var: usize = ctx.vars.len() - 1;
                                         if let Err(e) = loop {
                                             if &ctx.vars[curr_var].name == var_name {
-                                                ctx.vars[curr_var].value = value_evaluated.clone();
+                                                let var_value_rc = ctx.vars[curr_var].value.clone();
+                                                let mut var_value = var_value_rc.lock().unwrap();
+                                                *var_value = value_evaluated.clone();
                                                 break Ok(());
                                             }
 
@@ -196,10 +210,23 @@ pub fn eval(
                                     )))
                                 }
                             }
+                            "lambda" => {
+                                if list.len() == 4 {
+                                    Err(Box::new(std::io::Error::new(
+                                        std::io::ErrorKind::InvalidInput,
+                                        "Not implemented yet!",
+                                    )))
+                                } else {
+                                    Err(Box::new(std::io::Error::new(
+                                        std::io::ErrorKind::InvalidInput,
+                                        "Statement list `lambda` must have 3 elements: `lambda`, capture-list, args, block."
+                                    )))
+                                }
+                            }
                             op @ (">" | "<" | ">=" | "<=" | "=") => {
                                 if list.len() == 3 {
-                                    let val1 = eval(&list[1], ctx)?;
-                                    let val2 = eval(&list[2], ctx)?;
+                                    let val1 = resolve_reference(&eval(&list[1], ctx)?);
+                                    let val2 = resolve_reference(&eval(&list[2], ctx)?);
 
                                     if let parser::SExpr::Atom(parser::Atom::Number(val1_num)) =
                                         val1
@@ -235,7 +262,7 @@ pub fn eval(
                                 } else {
                                     Err(Box::new(std::io::Error::new(
                                         std::io::ErrorKind::InvalidInput,
-                                        "Statement list `if` must have 3 or 4 elements: `if`, cond, block1, block2?.",
+                                        "Comparison statement list must have exactly 3 elements: operator, val1, val2.",
                                     )))
                                 }
                             }
@@ -259,7 +286,7 @@ pub fn eval(
                             "print" => {
                                 if list.len() >= 2 {
                                     for i in 1..list.len() {
-                                        let result = eval(&list[i], ctx)?;
+                                        let result = resolve_reference(&eval(&list[i], ctx)?);
                                         if let parser::SExpr::Atom(atom) = &result {
                                             if let parser::Atom::Number(num) = atom {
                                                 print!("{}", num);
@@ -308,7 +335,7 @@ pub fn eval(
                                 if list.len() > 2 {
                                     let mut result: f64 = 0.0;
                                     for i in 1..list.len() {
-                                        let elem_result = eval(&list[i], ctx)?;
+                                        let elem_result = resolve_reference(&eval(&list[i], ctx)?);
                                         if let parser::SExpr::Atom(parser::Atom::Number(num)) =
                                             elem_result
                                         {
@@ -330,7 +357,7 @@ pub fn eval(
                             }
                             statement => Err(Box::new(std::io::Error::new(
                                 std::io::ErrorKind::InvalidInput,
-                                format!("Bad statement `{}`.", statement),
+                                format!("Bad statement list `{}`.", statement),
                             ))),
                         },
                         parser::SExpr::Atom(parser::Atom::Number(_)) => {
@@ -339,12 +366,21 @@ pub fn eval(
                                 "Cannot evaluate list whose first element is a number.",
                             )))
                         }
+                        parser::SExpr::Ref(_) => Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::InvalidInput,
+                            "First value of statement list cannot be a reference.",
+                        ))),
                         parser::SExpr::List(_) => unreachable!(),
                     }
                 }
             } else {
                 Ok(parser::SExpr::List(vec![]))
             }
+        }
+        parser::SExpr::Ref(ref_val) => {
+            let ref_val_clone = ref_val.clone();
+            let ref_val = ref_val_clone.lock().unwrap();
+            eval(&ref_val, ctx)
         }
     }
 }

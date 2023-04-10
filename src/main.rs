@@ -89,14 +89,21 @@ fn main() {
     let code7: String = String::from(
         r#"
         (let
-            (myfun1 (lambda () () 
+            (a 3)
+            (myfun1 (lambda (a) ()
                 (
                     (print "Hello, lambda!\n")
-                    72
+                    (print a "\n")
+                    (set a (+ a 1))
+                    a
                 )))
             (
+                (print "a at beginning: " a "\n")
+                (print "first call:\n")
                 (call myfun1)
+                (print "second call:\n")
                 (call myfun1)
+                (print "a at end: " a "\n")
             )
         )
         "#,

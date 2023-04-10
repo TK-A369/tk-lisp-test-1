@@ -90,19 +90,23 @@ fn main() {
         r#"
         (let
             (a 3)
-            (myfun1 (lambda (a) ()
+            (myfun1 (lambda (a) (val)
                 (
                     (print "Hello, lambda!\n")
+                    (print "val: " val "\n")
                     (print a "\n")
                     (set a (+ a 1))
                     a
                 )))
+            (sum (lambda () (a b) (+ a b)))
             (
                 (print "a at beginning: " a "\n")
                 (print "first call:\n")
-                (call myfun1)
+                (call myfun1 4)
                 (print "second call:\n")
-                (call myfun1)
+                (call myfun1 7)
+                (print "a at end: " a "\n")
+                (print "sum: " (call sum 9 17) "\n")
                 (print "a at end: " a "\n")
             )
         )

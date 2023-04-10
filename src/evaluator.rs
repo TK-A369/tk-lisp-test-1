@@ -315,7 +315,56 @@ pub fn eval(
                                                         }
                                                     }
 
-                                                    //TODO: arguments
+                                                    if let parser::SExpr::List(args) =
+                                                        &value_to_call[2]
+                                                    {
+                                                        for (i, arg) in args.iter().enumerate() {
+                                                            if let parser::SExpr::Atom(
+                                                                parser::Atom::Symbol(arg_name),
+                                                            ) = arg
+                                                            {
+                                                                if list.len() > i + 2 {
+                                                                    let arg_value: Rc<
+                                                                        Mutex<parser::SExpr>,
+                                                                    >;
+                                                                    let arg_evaluated: parser::SExpr =
+                                                                        eval(&list[i + 2], ctx)?;
+                                                                    arg_value = match arg_evaluated
+                                                                    {
+                                                                        parser::SExpr::Ref(
+                                                                            ref_val,
+                                                                        ) => ref_val.clone(),
+                                                                        arg_other => Rc::new(
+                                                                            Mutex::new(arg_other),
+                                                                        ),
+                                                                    };
+                                                                    new_ctx.vars.push(Variable {
+                                                                        name: arg_name.clone(),
+                                                                        value: arg_value,
+                                                                    });
+                                                                } else {
+                                                                    new_ctx.vars.push(Variable {
+                                                                        name: arg_name.clone(),
+                                                                        value: Rc::new(Mutex::new(
+                                                                            parser::SExpr::List(
+                                                                                vec![],
+                                                                            ),
+                                                                        )),
+                                                                    })
+                                                                }
+                                                            } else {
+                                                                return Err(Box::new(std::io::Error::new(
+                                                                    std::io::ErrorKind::InvalidInput,
+                                                                    "Bad lambda-captured."
+                                                                )));
+                                                            }
+                                                        }
+                                                    } else {
+                                                        return Err(Box::new(std::io::Error::new(
+                                                            std::io::ErrorKind::InvalidInput,
+                                                            "Bad lambda-captured.",
+                                                        )));
+                                                    }
 
                                                     eval(&value_to_call[3], &mut new_ctx)
                                                 } else {

@@ -73,10 +73,8 @@ pub fn lex(input: String) -> Result<Vec<Token>, Box<dyn std::error::Error>> {
             let mut buf: String = String::new();
             curr_pos += 1;
             'chars_loop: loop {
-                println!("curr_pos={}", curr_pos);
                 match input.chars().nth(curr_pos).unwrap() {
                     '\"' => {
-                        println!("String end!");
                         break 'chars_loop;
                     }
                     '\\' => {
@@ -96,7 +94,6 @@ pub fn lex(input: String) -> Result<Vec<Token>, Box<dyn std::error::Error>> {
                     }
                     ch => {
                         buf.push(ch);
-                        println!("Char: {}", ch);
                     }
                 }
                 curr_pos += 1;

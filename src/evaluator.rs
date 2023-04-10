@@ -264,7 +264,7 @@ pub fn eval(
                                     if let parser::SExpr::List(value_to_call) =
                                         resolve_reference(&(eval(&list[1], ctx)?))
                                     {
-                                        println!("Value to call:\n{:#?}", value_to_call);
+                                        // println!("Value to call:\n{:#?}", value_to_call);
                                         if let parser::SExpr::Atom(parser::Atom::Symbol(
                                             value_to_call_type,
                                         )) = &value_to_call[0]

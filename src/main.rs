@@ -96,6 +96,7 @@ fn main() {
                 )))
             (
                 (call myfun1)
+                (call myfun1)
             )
         )
         "#,
@@ -103,22 +104,22 @@ fn main() {
 
     match lexer::lex(code7) {
         Ok(tokens) => {
-            println!("Tokens: {:#?}", tokens);
+            println!("Tokens:\n{:#?}", tokens);
 
             match parser::parse(&tokens) {
                 Ok(sexpr) => {
-                    println!("Parsed code: {:#?}", sexpr);
+                    println!("Parsed code:\n{:#?}", sexpr);
 
                     match evaluator::eval(&sexpr, &mut evaluator::EvalContext::new()) {
                         Ok(result) => {
-                            println!("Result: {:#?}", result);
+                            println!("Result:\n{:#?}", result);
                         }
-                        Err(e) => eprintln!("Evaluation error: {}", e),
+                        Err(e) => eprintln!("Evaluation error:\n{}", e),
                     }
                 }
-                Err(e) => eprintln!("Parsing error: {}", e),
+                Err(e) => eprintln!("Parsing error:\n{}", e),
             }
         }
-        Err(e) => eprintln!("Lexing error: {}", e),
+        Err(e) => eprintln!("Lexing error:\n{}", e),
     }
 }
